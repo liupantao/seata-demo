@@ -5,6 +5,7 @@ import com.plateform.service.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -24,6 +25,7 @@ public class StorageController {
      * @return
      */
     @RequestMapping("decrease")
+    @ResponseBody
     public String decrease(@RequestParam("productId") Long productId, @RequestParam("count") Integer count){
         storageService.decrease(productId,count);
         return "Decrease storage success";

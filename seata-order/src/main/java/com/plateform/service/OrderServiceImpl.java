@@ -61,6 +61,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper,Order> implements 
     public void updateOrderStatus(Long userId, BigDecimal money, Integer status) {
         this.update ( new LambdaUpdateWrapper<Order> ().eq (Order::getUserId,userId)
                 .set (Order::getMoney,money).set (Order::getStatus,status));
+        logger.info ("----->修改订单数据状态success");
     }
 
 }

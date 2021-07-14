@@ -47,7 +47,8 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
 
         //修改订单状态，此调用会导致调用成环
         LOGGER.info("修改订单状态开始");
-       // String mes = orderApi.update(userId, money.multiply(new BigDecimal("0.09")),0);
-      //  LOGGER.info("修改订单状态结束：{}",mes);
+        String mes = orderApi.updateStatus(userId, money.multiply(new BigDecimal("0.09")),0);
+        // orderApi.updateOrder(2L);
+        //LOGGER.info("修改订单状态结束：{}",mes);
     }
 }

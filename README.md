@@ -9,7 +9,7 @@
 - 4.创建数据库表
 - 5.启动注册中心，启动server,启动client
 
-##### 关于调用成环和seata-server HA，见最后部分
+
 
 ### 1.此demo技术选型及版本信息
 
@@ -302,33 +302,48 @@ public class DataSourceConfiguration {
 这个demo,未做各种优化，如果压测，需要修改和优化一些配置，压测出错了，不一定是seata的锅，自己先排查，再去群里问问。
 
 ### 7.日志
+
+##### 0.RM注册成功日志
+```java
+2021-07-13 15:52:00.987  INFO 17828 --- [           main] i.s.c.r.netty.NettyClientChannelManager  : will connect to 10.1.6.90:8091
+2021-07-13 15:52:00.988  INFO 17828 --- [           main] i.s.c.rpc.netty.RmNettyRemotingClient    : RM will register :jdbc:mysql://localhost:3306/seata-order
+2021-07-13 15:52:00.990  INFO 17828 --- [           main] i.s.core.rpc.netty.NettyPoolableFactory  : NettyPool create channel to transactionRole:RMROLE,address:10.1.6.90:8091,msg:< RegisterRMRequest{resourceIds='jdbc:mysql://localhost:3306/seata-order', applicationId='seata-order', transactionServiceGroup='my_test_tx_group'} >
+2021-07-13 15:52:03.479  INFO 17828 --- [           main] i.s.c.rpc.netty.RmNettyRemotingClient    : register RM success. client version:1.4.2, server version:1.4.2,channel:[id: 0xdaf16b77, L:/10.1.6.90:49539 - R:/10.1.6.90:8091]
+2021-07-13 15:52:03.485  INFO 17828 --- [           main] i.s.core.rpc.netty.NettyPoolableFactory  : register success, cost 56 ms, version:1.4.2,role:RMROLE,channel:[id: 0xdaf16b77, L:/10.1.6.90:49539 - R:/10.1.6.90:8091]
+```
+
 正常情况：
 ##### 1.order
 ```java
-2019-09-06 15:44:33.536  INFO 53904 --- [io-8080-exec-10] i.seata.tm.api.DefaultGlobalTransaction  : Begin new global transaction [192.168.158.133:8091:2021468859]
-2019-09-06 15:44:33.536  INFO 53904 --- [io-8080-exec-10] c.j.order.service.OrderServiceImpl       : ------->交易开始
-2019-09-06 15:44:34.376  INFO 53904 --- [io-8080-exec-10] c.j.order.service.OrderServiceImpl       : ------->交易结束
-2019-09-06 15:44:34.593  INFO 53904 --- [io-8080-exec-10] i.seata.tm.api.DefaultGlobalTransaction  : [192.168.158.133:8091:2021468859] commit status:Committed
-2019-09-06 15:44:35.296  INFO 53904 --- [atch_RMROLE_6_8] i.s.core.rpc.netty.RmMessageListener     : onMessage:xid=192.168.158.133:8091:2021468859,branchId=2021468861,branchType=AT,resourceId=jdbc:mysql://116.62.62.26/seat-order,applicationData=null
-2019-09-06 15:44:35.297  INFO 53904 --- [atch_RMROLE_6_8] io.seata.rm.AbstractRMHandler            : Branch committing: 192.168.158.133:8091:2021468859 2021468861 jdbc:mysql://116.62.62.26/seat-order null
-2019-09-06 15:44:35.297  INFO 53904 --- [atch_RMROLE_6_8] io.seata.rm.AbstractRMHandler            : Branch commit result: PhaseTwo_Committed
+2021-07-13 16:01:42.793  INFO 18992 --- [nio-8082-exec-9] i.seata.tm.api.DefaultGlobalTransaction  : Begin new global transaction [10.1.6.90:8091:1396270390987395212]
+2021-07-13 16:01:42.793  INFO 18992 --- [nio-8082-exec-9] com.plateform.service.OrderServiceImpl   : ----->交易开始
+2021-07-13 16:01:42.938  INFO 18992 --- [nio-8082-exec-9] com.plateform.service.OrderServiceImpl   : ----->交易结束
+2021-07-13 16:01:42.949  INFO 18992 --- [nio-8082-exec-9] i.seata.tm.api.DefaultGlobalTransaction  : Suspending current transaction, xid = 10.1.6.90:8091:1396270390987395212
+2021-07-13 16:01:42.949  INFO 18992 --- [nio-8082-exec-9] i.seata.tm.api.DefaultGlobalTransaction  : [10.1.6.90:8091:1396270390987395212] commit status: Committed
+2021-07-13 16:01:43.665  INFO 18992 --- [h_RMROLE_1_2_24] i.s.c.r.p.c.RmBranchCommitProcessor      : rm client handle branch commit process:xid=10.1.6.90:8091:1396270390987395212,branchId=1396270390987395214,branchType=AT,resourceId=jdbc:mysql://localhost:3306/seata-order,applicationData=null
+2021-07-13 16:01:43.665  INFO 18992 --- [h_RMROLE_1_2_24] io.seata.rm.AbstractRMHandler            : Branch committing: 10.1.6.90:8091:1396270390987395212 1396270390987395214 jdbc:mysql://localhost:3306/seata-order null
+2021-07-13 16:01:43.665  INFO 18992 --- [h_RMROLE_1_2_24] io.seata.rm.AbstractRMHandler            : Branch commit result: PhaseTwo_Committed
 ```
 ##### 2.storage
 ```java
-2019-09-06 15:44:33.776  INFO 9704 --- [nio-8082-exec-1] c.j.storage.service.StorageServiceImpl   : ------->扣减库存开始
-2019-09-06 15:44:34.030  INFO 9704 --- [nio-8082-exec-1] c.j.storage.service.StorageServiceImpl   : ------->扣减库存结束
-2019-09-06 15:44:35.422  INFO 9704 --- [atch_RMROLE_5_8] i.s.core.rpc.netty.RmMessageListener     : onMessage:xid=192.168.158.133:8091:2021468859,branchId=2021468864,branchType=AT,resourceId=jdbc:mysql://116.62.62.26/seat-storage,applicationData=null
-2019-09-06 15:44:35.423  INFO 9704 --- [atch_RMROLE_5_8] io.seata.rm.AbstractRMHandler            : Branch committing: 192.168.158.133:8091:2021468859 2021468864 jdbc:mysql://116.62.62.26/seat-storage null
-2019-09-06 15:44:35.423  INFO 9704 --- [atch_RMROLE_5_8] io.seata.rm.AbstractRMHandler            : Branch commit result: PhaseTwo_Committed
+2021-07-13 16:01:42.848  INFO 12960 --- [nio-8083-exec-5] c.plateform.service.StorageServiceImpl   : ------->扣减库存开始
+2021-07-13 16:01:42.889  INFO 12960 --- [nio-8083-exec-5] c.plateform.service.StorageServiceImpl   : ------->扣减库存结束
+2021-07-13 16:01:43.673  INFO 12960 --- [h_RMROLE_1_3_24] i.s.c.r.p.c.RmBranchCommitProcessor      : rm client handle branch commit process:xid=10.1.6.90:8091:1396270390987395212,branchId=1396270390987395216,branchType=AT,resourceId=jdbc:mysql://localhost:3306/seata-storage,applicationData=null
+2021-07-13 16:01:43.673  INFO 12960 --- [h_RMROLE_1_3_24] io.seata.rm.AbstractRMHandler            : Branch committing: 10.1.6.90:8091:1396270390987395212 1396270390987395216 jdbc:mysql://localhost:3306/seata-storage null
+2021-07-13 16:01:43.674  INFO 12960 --- [h_RMROLE_1_3_24] io.seata.rm.AbstractRMHandler            : Branch commit result: PhaseTwo_Committed
+
 ```
 
 ##### 3.account
 ```java
-2019-09-06 15:44:34.039  INFO 36556 --- [nio-8081-exec-5] c.j.account.service.AccountServiceImpl   : ------->扣减账户开始
-2019-09-06 15:44:34.039  INFO 36556 --- [nio-8081-exec-5] c.j.account.service.AccountServiceImpl   : ------->扣减账户结束
-2019-09-06 15:44:35.545  INFO 36556 --- [atch_RMROLE_3_8] i.s.core.rpc.netty.RmMessageListener     : onMessage:xid=192.168.158.133:8091:2021468859,branchId=2021468867,branchType=AT,resourceId=jdbc:mysql://116.62.62.26/seat-account,applicationData=null
-2019-09-06 15:44:35.545  INFO 36556 --- [atch_RMROLE_3_8] io.seata.rm.AbstractRMHandler            : Branch committing: 192.168.158.133:8091:2021468859 2021468867 jdbc:mysql://116.62.62.26/seat-account null
-2019-09-06 15:44:35.545  INFO 36556 --- [atch_RMROLE_3_8] io.seata.rm.AbstractRMHandler            : Branch commit result: PhaseTwo_Committed
+2021-07-13 16:01:42.897  INFO 30592 --- [nio-8084-exec-3] c.plateform.service.AccountServiceImpl   : ------->扣减账户开始account中
+2021-07-13 16:01:42.936  INFO 30592 --- [nio-8084-exec-3] c.plateform.service.AccountServiceImpl   : ------->扣减账户结束account中
+2021-07-13 16:01:42.936  INFO 30592 --- [nio-8084-exec-3] c.plateform.service.AccountServiceImpl   : 修改订单状态开始
+2021-07-13 16:01:43.679  INFO 30592 --- [h_RMROLE_1_2_24] i.s.c.r.p.c.RmBranchCommitProcessor      : rm client handle branch commit process:xid=10.1.6.90:8091:1396270390987395212,branchId=1396270390987395218,branchType=AT,resourceId=jdbc:mysql://localhost:3306/seata-account,applicationData=null
+2021-07-13 16:01:43.679  INFO 30592 --- [h_RMROLE_1_2_24] io.seata.rm.AbstractRMHandler            : Branch committing: 10.1.6.90:8091:1396270390987395212 1396270390987395218 jdbc:mysql://localhost:3306/seata-account null
+2021-07-13 16:01:43.679  INFO 30592 --- [h_RMROLE_1_2_24] io.seata.rm.AbstractRMHandler            : Branch commit result: PhaseTwo_Committed
+2021-07-13 16:04:53.245  INFO 30592 --- [trap-executor-0] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+
 ```
 ### 8.模拟异常
 在AccountServiceImpl中模拟异常情况，然后可以查看日志
@@ -342,8 +357,8 @@ public class DataSourceConfiguration {
     public void decrease(Long userId, BigDecimal money) {
         LOGGER.info("------->扣减账户开始");
 //        try {
-//            Thread.sleep(30*1000);
-//        } catch (InterruptedException e) {
+//            int i=1/0;
+//        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
         LOGGER.info("------->扣减账户结束");
@@ -355,6 +370,7 @@ public class DataSourceConfiguration {
 这里测试的成环是指order->storage->account->order，
 这里的account服务又会回头去修改order在前面添加的数据。
 经过测试，是支持此种场景的。
+
 ```java
     /**
      * 扣减账户余额

@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 /**
  * @author IT云清
  */
-@FeignClient(value = "account-server")
+@FeignClient(value = "seata-account")
 public interface AccountApi {
 
     /**
