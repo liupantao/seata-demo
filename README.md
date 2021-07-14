@@ -92,46 +92,32 @@ store {
   }
 
   ## database store  mode=db时，事务日志存储会存储在这个配置的数据库里
-  db {
-    ## the implement of javax.sql.DataSource, such as DruidDataSource(druid)/BasicDataSource(dbcp) etc.
-    datasource = "dbcp"
-    ## mysql/oracle/h2/oceanbase etc.
-    db-type = "mysql"
-    driver-class-name = "com.mysql.jdbc.Driver"
-    url = "jdbc:mysql://116.62.62.26/seat-server"  修改这里
-    user = "root"  修改这里
-    password = "root"  修改这里
-    min-conn = 1
-    max-conn = 3
-    global.table = "global_table"
-    branch.table = "branch_table"
-    lock-table = "lock_table"
-    query-limit = 100
+ db {
+    ## the implement of javax.sql.DataSource, such as           DruidDataSource(druid)/BasicDataSource(dbcp)/HikariDataSource(hikari) etc.
+    datasource = "druid"
+    ## mysql/oracle/postgresql/h2/oceanbase etc.
+    dbType = "mysql"
+    driverClassName = "com.mysql.jdbc.Driver"
+    ## if using mysql to store the data, recommend add rewriteBatchedStatements=true in jdbc connection param
+    url = "jdbc:mysql://127.0.0.1:3306/seata?rewriteBatchedStatements=true"
+    user = "root"
+    password = "root"
+    minConn = 5
+    maxConn = 100
+    globalTable = "global_table"
+    branchTable = "branch_table"
+    lockTable = "lock_table"
+    queryLimit = 100
+    maxWait = 5000
   }
-}
+
 ```
 
-由于此demo我们使用db模式存储事务日志，所以，我们要创建三张表：global_table，branch_table，lock_table，建表sql在seata/seata/script/server/db/mysql.sql；
+由于此demo我们使用db模式存储事务日志，所以，我们要创建三张表：global_table，branch_table，lock_table，建表sql在seata/script/server/db/mysql.sql（或者seata-demo/script/server/db/mysql.sql）；
 
-由于存储undo_log是在业务库中，所以在每个业务库中，还要创建undo_log表，建表sql在/conf/db_undo_log.sql中。
+由于存储undo_log是在业务库中，所以在每个业务库中，还要创建undo_log表，建表sql在[seata](https://github.com/seata/seata)/[script](https://github.com/seata/seata/tree/develop/script)/[client](https://github.com/seata/seata/tree/develop/script/client)/[at](https://github.com/seata/seata/tree/develop/script/client/at)/**db**/中(或者seata-demo/script/db/mysql.sql)。
 
-由于我自定义了事务组名称，所以这里也做了修改：
-```java
-service {
-  #vgroup->rgroup
-  vgroup_mapping.fsp_tx_group = "default"  修改这里，fsp_tx_group这个事务组名称是我自定义的，一定要与client端的这个配置一致！否则会报错！
-  #only support single node
-  default.grouplist = "127.0.0.1:8091"   此配置作用参考:https://blog.csdn.net/weixin_39800144/article/details/100726116
-  #degrade current not support
-  enableDegrade = false
-  #disable
-  disable = false
-  #unit ms,s,m,h,d represents milliseconds, seconds, minutes, hours, days, default permanent
-  max.commit.retry.timeout = "-1"
-  max.rollback.retry.timeout = "-1"
-}
-```
-其他的可以先使用默认值。
+
 
 ##### 2.registry.conf
 
@@ -194,29 +180,22 @@ registry {
 client端的几个服务，都是普通的springboot整合了springCloud组件的正常服务，所以，你需要配置eureka，数据库，mapper扫描等，即使不使用seata，你也需要做，这里不做特殊说明，看代码就好。
 
 #### 2.特殊配置
-##### 1.application.yml
+##### 1.application.properties
 以order服务为例，除了常规配置外，这里还要配置下事务组信息：
 ```java
-spring:
-    application:
-        name: order-server
-    cloud:
-        alibaba:
-            seata:
-                tx-service-group: fsp_tx_group  这个fsp_tx_group自定义命名很重要，server，client都要保持一致
+spring.cloud.alibaba.seata.tx-service-group=my_test_tx_group //事务组
 ```
 ##### 2.file.conf
 自己新建的项目是没有这个配置文件的，copy过来，修改下面配置：
 ```java
 service {
-  #vgroup->rgroup
-  vgroup_mapping.fsp_tx_group = "default"   这个fsp_tx_group自定义命名很重要，server，client都要保持一致
-  #only support single node
+  #transaction service group mapping
+  vgroupMapping.my_test_tx_group = "default"
+  #only support when registry.type=file, please don't set multiple addresses
   default.grouplist = "127.0.0.1:8091"
-  #degrade current not support
+  #degrade, current not support
   enableDegrade = false
-  #disable
-  disable = false
+  #disable seata
   disableGlobalTransaction = false
 }
 ```
@@ -276,16 +255,6 @@ public class DataSourceConfiguration {
     @Bean("dataSource")
     public DataSourceProxy dataSource(DataSource druidDataSource){
         return new DataSourceProxy(druidDataSource);
-    }
-
-    @Bean
-    public SqlSessionFactory sqlSessionFactory(DataSourceProxy dataSourceProxy)throws Exception{
-        SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
-        sqlSessionFactoryBean.setDataSource(dataSourceProxy);
-        sqlSessionFactoryBean.setMapperLocations(new PathMatchingResourcePatternResolver()
-        .getResources("classpath*:/mapper/*.xml"));
-        sqlSessionFactoryBean.setTransactionFactory(new SpringManagedTransactionFactory());
-        return sqlSessionFactoryBean.getObject();
     }
 
 }
@@ -356,11 +325,9 @@ public class DataSourceConfiguration {
     @Override
     public void decrease(Long userId, BigDecimal money) {
         LOGGER.info("------->扣减账户开始");
-//        try {
-//            int i=1/0;
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+//        
+//      int i=1/0;
+//        
         LOGGER.info("------->扣减账户结束");
         accountDao.decrease(userId,money);
     }
