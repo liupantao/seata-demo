@@ -40,6 +40,10 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
 //        } catch (InterruptedException e) {
 //            e.printStackTrace();
 //        }
+        //模拟异常
+
+        //int i=1/0;
+
         Account accountDb = this.getOne (new LambdaQueryWrapper<Account> ().eq (Account::getUserId, userId));
         BigDecimal subtract = accountDb.getTotal ().subtract (money);
         boolean update = this.update (new LambdaUpdateWrapper<Account> ().eq (Account::getUserId, userId).set (Account::getTotal, subtract));
@@ -48,7 +52,6 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
         //修改订单状态，此调用会导致调用成环
         LOGGER.info("修改订单状态开始");
         String mes = orderApi.updateStatus(userId, money.multiply(new BigDecimal("0.09")),0);
-        // orderApi.updateOrder(2L);
-        //LOGGER.info("修改订单状态结束：{}",mes);
+        LOGGER.info("修改订单状态结束：{}",mes);
     }
 }
